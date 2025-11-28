@@ -1,0 +1,88 @@
+package com.zetsumei.nocoin.block;
+
+import com.zetsumei.nocoin.Nocoin;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.function.Supplier;
+
+/**
+ * Registre des blocs du mod NOCOIN.
+ */
+public class ModBlocks {
+
+    public static final DeferredRegister<Block> BLOCKS =
+            DeferredRegister.create(ForgeRegistries.BLOCKS, Nocoin.MODID);
+
+    public static final DeferredRegister<Item> BLOCK_ITEMS =
+            DeferredRegister.create(ForgeRegistries.ITEMS, Nocoin.MODID);
+
+    /**
+     * Machine à Gacha - Utilisée pour effectuer des tirages avec les Clés Gacha.
+     */
+    public static final RegistryObject<Block> GACHA_MACHINE = registerBlock("gacha_machine",
+            () -> new GachaMachineBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(5.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .lightLevel(state -> 7)));
+
+    /**
+     * Magasin Joueur - Permet aux joueurs de créer leurs propres boutiques.
+     */
+    public static final RegistryObject<Block> PLAYER_SHOP = registerBlock("player_shop",
+            () -> new PlayerShopBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(2.5F, 3.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()
+                    .lightLevel(state -> 5)));
+
+    /**
+     * Leaderboard - Panneau d'affichage du classement des joueurs.
+     * Affiche le top 10 en 3D avec un effet holographique.
+     * Parfait pour être placé au spawn!
+     */
+    public static final RegistryObject<Block> LEADERBOARD = registerBlock("leaderboard",
+            () -> new LeaderboardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(5.0F, 6.0F)
+                    .sound(SoundType.AMETHYST)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .lightLevel(state -> 10)));
+
+    /**
+     * Enregistre un bloc avec son item associé.
+     */
+    private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> block) {
+        RegistryObject<T> registeredBlock = BLOCKS.register(name, block);
+        registerBlockItem(name, registeredBlock);
+        return registeredBlock;
+    }
+
+    /**
+     * Enregistre l'item associé à un bloc.
+     */
+    private static <T extends Block> void registerBlockItem(String name, RegistryObject<T> block) {
+        BLOCK_ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties()));
+    }
+
+    /**
+     * Enregistre les blocs sur le bus d'événements du mod.
+     */
+    public static void register(IEventBus eventBus) {
+        BLOCKS.register(eventBus);
+        BLOCK_ITEMS.register(eventBus);
+    }
+}

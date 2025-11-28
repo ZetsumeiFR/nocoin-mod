@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "nocoin:block/leaderboard" },
+    "facing=east": { "model": "nocoin:block/leaderboard", "y": 90 },
+    "facing=south": { "model": "nocoin:block/leaderboard", "y": 180 },
+    "facing=west": { "model": "nocoin:block/leaderboard", "y": 270 }
+  }
+}

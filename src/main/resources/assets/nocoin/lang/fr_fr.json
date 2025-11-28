@@ -1,0 +1,127 @@
+{
+  "key.category.nocoin": "NOCOIN",
+  "key.nocoin.open_menu": "Ouvrir le menu NOCOIN",
+
+  "screen.nocoin.title": "Portefeuille NOCOIN",
+  "screen.nocoin.balance": "Solde : %s NOCOIN",
+  "screen.nocoin.info": "Tuez des mobs pour en gagner !",
+
+  "screen.nocoin.shop.title": "Boutique NOCOIN",
+  "screen.nocoin.shop.loading": "Chargement de la boutique...",
+
+  "gui.nocoin.close": "Fermer",
+  "gui.nocoin.cancel": "Annuler",
+  "gui.nocoin.shop": "Boutique",
+  "gui.nocoin.shop.buy": "Acheter",
+
+  "command.nocoin.shop.open": "Utilisez la touche N pour ouvrir la boutique !",
+  "command.nocoin.shop.empty": "La boutique est vide.",
+  "command.nocoin.shop.list_header": "=== Boutique NOCOIN ===",
+  "command.nocoin.shop.list_footer": "Utilisez /nocoin shop buy <id> pour acheter.",
+
+  "shop.nocoin.purchase_success": "Vous avez achete %s x%d pour %s NOCOIN !",
+  "shop.nocoin.error.item_not_found": "Article introuvable dans la boutique.",
+  "shop.nocoin.error.item_invalid": "Cet article n'est plus disponible.",
+  "shop.nocoin.error.insufficient_balance": "Solde NOCOIN insuffisant !",
+  "shop.nocoin.error.inventory_full": "Votre inventaire est plein !",
+  "shop.nocoin.error.unknown": "Une erreur est survenue lors de l'achat.",
+
+  "item.nocoin.gacha_key": "Cle Gacha",
+  "item.nocoin.gacha_key.tooltip": "Une cle mysterieuse...",
+  "item.nocoin.gacha_key.tooltip2": "Utilisez-la dans la Machine Gacha !",
+
+  "entity.nocoin.gacha_vendor": "Vendeur Gacha",
+
+  "screen.nocoin.gacha_vendor.title": "Vendeur Gacha",
+  "screen.nocoin.gacha_vendor.unit_price": "Prix unitaire : %s NC",
+  "screen.nocoin.gacha_vendor.total": "Total : %s NOCOIN",
+
+  "gui.nocoin.gacha_vendor.buy": "Acheter",
+
+  "gacha.nocoin.insufficient_balance": "Solde NOCOIN insuffisant !",
+  "gacha.nocoin.inventory_full": "Votre inventaire est plein !",
+
+  "block.nocoin.gacha_machine": "Machine a Gacha",
+
+  "screen.nocoin.gacha_machine.title": "Machine Gacha",
+  "screen.nocoin.gacha_machine.pulling": "Tirage en cours...",
+  "screen.nocoin.gacha_machine.instruction1": "Inserez une Cle Gacha pour tirer",
+  "screen.nocoin.gacha_machine.instruction2": "Tentez votre chance !",
+  "screen.nocoin.gacha_machine.probabilities": "Probabilites :",
+  "screen.nocoin.gacha_machine.congrats_5star": "LEGENDAIRE !",
+  "screen.nocoin.gacha_machine.congrats_4star": "Epique !",
+  "screen.nocoin.gacha_machine.congrats_3star": "Obtenu !",
+
+  "gui.nocoin.gacha_machine.pull": "TIRER !",
+
+  "gacha.nocoin.pull.five_star": "LEGENDAIRE ! Vous avez obtenu %s !",
+  "gacha.nocoin.pull.four_star": "Epique ! Vous avez obtenu %s !",
+  "gacha.nocoin.pull.three_star": "Vous avez obtenu %s.",
+
+  "block.nocoin.player_shop": "Magasin Joueur",
+
+  "screen.nocoin.player_shop.owner.title": "Magasin de %s",
+  "screen.nocoin.player_shop.customer.title": "Magasin de %s",
+  "screen.nocoin.player_shop.name_label": "Nom du magasin :",
+  "screen.nocoin.player_shop.add_offer": "Ajouter une offre",
+  "screen.nocoin.player_shop.add_sell": "Ajouter une vente",
+  "screen.nocoin.player_shop.add_buy": "Ajouter un achat",
+  "screen.nocoin.player_shop.offers": "Vos offres",
+  "screen.nocoin.player_shop.tab.buy": "ACHETER",
+  "screen.nocoin.player_shop.tab.sell": "VENDRE",
+  "screen.nocoin.player_shop.tab.buy.desc": "Articles que vous pouvez acheter",
+  "screen.nocoin.player_shop.tab.sell.desc": "Articles que le magasin souhaite acheter",
+  "screen.nocoin.player_shop.action.buy": "Acheter",
+  "screen.nocoin.player_shop.action.sell": "Vendre",
+  "screen.nocoin.player_shop.no_sell_offers": "Aucun article en vente",
+  "screen.nocoin.player_shop.no_buy_offers": "Aucune demande d'achat",
+  "screen.nocoin.player_shop.owner": "Proprietaire : %s",
+  "screen.nocoin.player_shop.balance": "Votre solde : %s NC",
+  "screen.nocoin.player_shop.stock": "Stock : %d",
+  "screen.nocoin.player_shop.price": "%s NC chacun",
+  "screen.nocoin.player_shop.quantity": "x%d",
+
+  "shop.nocoin.player.type.sell": "VENTE",
+  "shop.nocoin.player.type.buy": "ACHAT",
+
+  "shop.nocoin.player.transaction.success": "Transaction reussie !",
+  "shop.nocoin.player.transaction.insufficient_funds": "Solde NOCOIN insuffisant !",
+  "shop.nocoin.player.transaction.insufficient_stock": "Stock insuffisant !",
+  "shop.nocoin.player.transaction.insufficient_items": "Vous n'avez pas assez d'objets !",
+  "shop.nocoin.player.transaction.inventory_full": "Votre inventaire est plein !",
+  "shop.nocoin.player.transaction.offer_not_found": "Offre plus disponible.",
+  "shop.nocoin.player.transaction.shop_not_found": "Magasin introuvable.",
+  "shop.nocoin.player.transaction.not_active": "Cette offre n'est pas active.",
+  "shop.nocoin.player.transaction.owner_offline": "Le proprietaire doit etre en ligne.",
+  "shop.nocoin.player.transaction.error": "Echec de la transaction.",
+  "shop.nocoin.player.transaction.offer_inactive": "Cette offre n'est pas active.",
+  "shop.nocoin.player.transaction.no_stock": "Rupture de stock !",
+  "shop.nocoin.player.transaction.insufficient_balance": "Solde NOCOIN insuffisant !",
+
+  "screen.nocoin.player_shop.add_stock": "Ajouter au stock",
+  "screen.nocoin.player_shop.add_stock.tooltip": "Cliquez pour ajouter des objets de votre inventaire",
+  "screen.nocoin.player_shop.save": "Sauvegarder",
+  "screen.nocoin.player_shop.editing": "Modification",
+
+  "gui.nocoin.leaderboard": "Classement",
+
+  "block.nocoin.leaderboard": "Panneau de Classement",
+  "block.nocoin.leaderboard.tooltip": "Affiche le top 10 des joueurs par NOCOIN",
+  "block.nocoin.leaderboard.tooltip2": "Cliquez pour voir le classement complet !",
+
+  "screen.nocoin.leaderboard.title": "Classement",
+  "screen.nocoin.leaderboard.tab.nocoin": "NOCOIN",
+  "screen.nocoin.leaderboard.loading": "Chargement...",
+  "screen.nocoin.leaderboard.empty": "Aucun joueur a afficher",
+  "screen.nocoin.leaderboard.your_rank": "Votre rang : #%d",
+
+  "gui.nocoin.field.item_id": "ID Item",
+  "gui.nocoin.field.item_id.hint": "minecraft:diamond",
+  "gui.nocoin.field.quantity": "Qte",
+  "gui.nocoin.field.price": "Prix",
+  "gui.nocoin.toggle.on": "OUI",
+  "gui.nocoin.toggle.off": "NON",
+  "gui.nocoin.stock": "Stock : %d",
+  "gui.nocoin.shop.type.sell": "[VEND]",
+  "gui.nocoin.shop.type.buy": "[ACHETE]"
+}
