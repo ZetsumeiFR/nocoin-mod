@@ -37,6 +37,17 @@ public class ModBlockEntities {
                     ).build(null));
 
     /**
+     * BlockEntity pour la machine à Gacha.
+     * Chaque machine a son propre catalogue de récompenses.
+     */
+    public static final RegistryObject<BlockEntityType<GachaMachineBlockEntity>> GACHA_MACHINE =
+            BLOCK_ENTITIES.register("gacha_machine",
+                    () -> BlockEntityType.Builder.of(
+                            GachaMachineBlockEntity::new,
+                            ModBlocks.GACHA_MACHINE.get()
+                    ).build(null));
+
+    /**
      * Enregistre les BlockEntities sur le bus d'événements du mod.
      */
     public static void register(IEventBus eventBus) {

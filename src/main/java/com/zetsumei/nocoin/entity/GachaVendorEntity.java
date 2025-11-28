@@ -99,6 +99,11 @@ public class GachaVendorEntity extends PathfinderMob {
     }
 
     @Override
+    public Component getName() {
+        return Component.literal("Vendeur Gacha");
+    }
+
+    @Override
     public void addAdditionalSaveData(CompoundTag compound) {
         super.addAdditionalSaveData(compound);
     }

@@ -2,16 +2,25 @@ package com.zetsumei.nocoin.network;
 
 import com.zetsumei.nocoin.Config;
 import com.zetsumei.nocoin.Nocoin;
+import com.zetsumei.nocoin.block.entity.GachaMachineBlockEntity;
 import com.zetsumei.nocoin.block.entity.PlayerShopBlockEntity;
 import com.zetsumei.nocoin.capability.NocoinCapabilityProvider;
+import com.zetsumei.nocoin.gacha.GachaHistory;
+import com.zetsumei.nocoin.gacha.GachaHistoryManager;
+import com.zetsumei.nocoin.gacha.GachaManager;
+import com.zetsumei.nocoin.gacha.GachaReward;
 import com.zetsumei.nocoin.leaderboard.LeaderboardEntry;
 import com.zetsumei.nocoin.leaderboard.LeaderboardManager;
+import com.zetsumei.nocoin.network.gacha.*;
 import com.zetsumei.nocoin.network.player.*;
 import com.zetsumei.nocoin.shop.ShopManager;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -21,7 +30,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  */
 public class NocoinNetworkHandler {
 
-    private static final String PROTOCOL_VERSION = "3";
+    private static final String PROTOCOL_VERSION = "4";
 
     public static final SimpleChannel CHANNEL =
         NetworkRegistry.newSimpleChannel(
@@ -226,6 +235,97 @@ public class NocoinNetworkHandler {
             LeaderboardDataPacket::decode,
             LeaderboardDataPacket::handle
         );
+
+        // Paquets pour le catalogue et l'historique du Gacha
+        CHANNEL.registerMessage(
+            packetId++,
+            RequestGachaCatalogPacket.class,
+            RequestGachaCatalogPacket::encode,
+            RequestGachaCatalogPacket::decode,
+            RequestGachaCatalogPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaCatalogPacket.class,
+            GachaCatalogPacket::encode,
+            GachaCatalogPacket::decode,
+            GachaCatalogPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            RequestGachaHistoryPacket.class,
+            RequestGachaHistoryPacket::encode,
+            RequestGachaHistoryPacket::decode,
+            RequestGachaHistoryPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaHistoryPacket.class,
+            GachaHistoryPacket::encode,
+            GachaHistoryPacket::decode,
+            GachaHistoryPacket::handle
+        );
+
+        // Paquets pour le multi-tirage
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaMultiPullPacket.class,
+            GachaMultiPullPacket::encode,
+            GachaMultiPullPacket::decode,
+            GachaMultiPullPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaMultiPullResultPacket.class,
+            GachaMultiPullResultPacket::encode,
+            GachaMultiPullResultPacket::decode,
+            GachaMultiPullResultPacket::handle
+        );
+
+        // Paquets pour l'administration du Gacha
+        CHANNEL.registerMessage(
+            packetId++,
+            OpenGachaAdminPacket.class,
+            OpenGachaAdminPacket::encode,
+            OpenGachaAdminPacket::decode,
+            OpenGachaAdminPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaAdminAddRewardPacket.class,
+            GachaAdminAddRewardPacket::encode,
+            GachaAdminAddRewardPacket::decode,
+            GachaAdminAddRewardPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaAdminRemoveRewardPacket.class,
+            GachaAdminRemoveRewardPacket::encode,
+            GachaAdminRemoveRewardPacket::decode,
+            GachaAdminRemoveRewardPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaAdminModifyRewardPacket.class,
+            GachaAdminModifyRewardPacket::encode,
+            GachaAdminModifyRewardPacket::decode,
+            GachaAdminModifyRewardPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+            packetId++,
+            GachaAdminSetRatesPacket.class,
+            GachaAdminSetRatesPacket::encode,
+            GachaAdminSetRatesPacket::decode,
+            GachaAdminSetRatesPacket::handle
+        );
     }
 
     /**
@@ -342,25 +442,28 @@ public class NocoinNetworkHandler {
     /**
      * Envoie l'ouverture de l'écran de la machine à Gacha au client.
      * @param player le joueur destinataire
+     * @param machinePos la position de la machine
      * @param hasKey si le joueur a une clé
      * @param keyCount le nombre de clés du joueur
      */
     public static void sendOpenGachaMachineScreen(
         ServerPlayer player,
+        BlockPos machinePos,
         boolean hasKey,
         int keyCount
     ) {
         CHANNEL.send(
             PacketDistributor.PLAYER.with(() -> player),
-            new OpenGachaMachinePacket(hasKey, keyCount)
+            new OpenGachaMachinePacket(machinePos, hasKey, keyCount)
         );
     }
 
     /**
      * Demande un tirage Gacha au serveur (appelé depuis le client).
+     * @param machinePos la position de la machine
      */
-    public static void sendGachaPullRequest() {
-        CHANNEL.sendToServer(new GachaPullPacket());
+    public static void sendGachaPullRequest(BlockPos machinePos) {
+        CHANNEL.sendToServer(new GachaPullPacket(machinePos));
     }
 
     /**
@@ -620,5 +723,218 @@ public class NocoinNetworkHandler {
             player,
             LeaderboardManager.LeaderboardType.NOCOIN
         );
+    }
+
+    // =============== Méthodes pour le Catalogue et l'Historique Gacha ===============
+
+    /**
+     * Demande le catalogue gacha au serveur (appelé depuis le client).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void requestGachaCatalog(BlockPos machinePos) {
+        CHANNEL.sendToServer(new RequestGachaCatalogPacket(machinePos));
+    }
+
+    /**
+     * Envoie le catalogue gacha au client.
+     * @param player le joueur destinataire
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaCatalogToClient(ServerPlayer player, BlockPos machinePos) {
+        Level level = player.level();
+        BlockEntity be = level.getBlockEntity(machinePos);
+        if (!(be instanceof GachaMachineBlockEntity gachaBE)) {
+            return;
+        }
+
+        List<GachaReward> rewards = gachaBE.getRewards();
+        List<GachaCatalogPacket.CatalogEntry> entries = new ArrayList<>();
+
+        for (GachaReward reward : rewards) {
+            double effectiveChance = calculateEffectiveChanceForMachine(reward, rewards, gachaBE);
+            entries.add(new GachaCatalogPacket.CatalogEntry(
+                reward.getItemId(),
+                reward.getDisplayName(),
+                reward.getRarity(),
+                reward.getWeight(),
+                effectiveChance
+            ));
+        }
+
+        CHANNEL.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            new GachaCatalogPacket(entries, 
+                gachaBE.getFiveStarRate(),
+                gachaBE.getFourStarRate(),
+                gachaBE.getThreeStarRate())
+        );
+    }
+
+    /**
+     * Calcule la probabilité effective d'une récompense (méthode globale, legacy).
+     */
+    private static double calculateEffectiveChance(GachaReward reward, List<GachaReward> allRewards) {
+        double rarityRate = switch (reward.getRarity()) {
+            case FIVE_STAR -> GachaManager.getFiveStarRate();
+            case FOUR_STAR -> GachaManager.getFourStarRate();
+            case THREE_STAR -> GachaManager.getThreeStarRate();
+        };
+
+        double totalWeightInRarity = allRewards.stream()
+            .filter(r -> r.getRarity() == reward.getRarity())
+            .mapToDouble(GachaReward::getWeight)
+            .sum();
+
+        if (totalWeightInRarity == 0) return 0;
+        return (reward.getWeight() / totalWeightInRarity) * rarityRate;
+    }
+
+    /**
+     * Demande l'historique gacha au serveur (appelé depuis le client).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void requestGachaHistory(BlockPos machinePos) {
+        CHANNEL.sendToServer(new RequestGachaHistoryPacket(machinePos));
+    }
+
+    /**
+     * Envoie l'historique gacha au client.
+     * @param player le joueur destinataire
+     */
+    public static void sendGachaHistoryToClient(ServerPlayer player) {
+        List<GachaHistory> histories = GachaHistoryManager.getInstance().getHistory(player.getUUID());
+        CHANNEL.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            new GachaHistoryPacket(histories)
+        );
+    }
+
+    // =============== Méthodes pour le Multi-Tirage Gacha ===============
+
+    /**
+     * Demande un multi-tirage gacha au serveur (appelé depuis le client).
+     * @param machinePos la position de la machine gacha
+     * @param count le nombre de tirages (max 10)
+     */
+    public static void sendGachaMultiPullRequest(BlockPos machinePos, int count) {
+        CHANNEL.sendToServer(new GachaMultiPullPacket(machinePos, count));
+    }
+
+    /**
+     * Envoie le résultat d'un multi-tirage gacha au client.
+     * @param player le joueur destinataire
+     * @param success si le tirage a réussi
+     * @param results les résultats des tirages
+     */
+    public static void sendGachaMultiPullResult(
+        ServerPlayer player,
+        boolean success,
+        List<GachaMultiPullResultPacket.PullResult> results
+    ) {
+        CHANNEL.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            new GachaMultiPullResultPacket(success, results)
+        );
+    }
+
+    // =============== Méthodes pour l'Administration du Gacha ===============
+
+    /**
+     * Ouvre l'écran d'administration du gacha pour un joueur (côté serveur).
+     * @param player le joueur admin
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendOpenGachaAdminScreen(ServerPlayer player, BlockPos machinePos) {
+        if (!player.hasPermissions(2)) {
+            return;
+        }
+
+        Level level = player.level();
+        BlockEntity be = level.getBlockEntity(machinePos);
+        if (!(be instanceof GachaMachineBlockEntity gachaBE)) {
+            return;
+        }
+
+        List<GachaReward> rewards = gachaBE.getRewards();
+        List<GachaCatalogPacket.CatalogEntry> entries = new ArrayList<>();
+
+        for (GachaReward reward : rewards) {
+            double effectiveChance = calculateEffectiveChanceForMachine(reward, rewards, gachaBE);
+            entries.add(new GachaCatalogPacket.CatalogEntry(
+                reward.getItemId(),
+                reward.getDisplayName(),
+                reward.getRarity(),
+                reward.getWeight(),
+                effectiveChance
+            ));
+        }
+
+        CHANNEL.send(
+            PacketDistributor.PLAYER.with(() -> player),
+            new OpenGachaAdminPacket(machinePos, entries,
+                gachaBE.getFiveStarRate(),
+                gachaBE.getFourStarRate(),
+                gachaBE.getThreeStarRate())
+        );
+    }
+
+    /**
+     * Calcule la chance effective d'une récompense pour une machine spécifique.
+     */
+    private static double calculateEffectiveChanceForMachine(GachaReward reward, List<GachaReward> allRewards, GachaMachineBlockEntity machine) {
+        double rarityRate = switch (reward.getRarity()) {
+            case FIVE_STAR -> machine.getFiveStarRate();
+            case FOUR_STAR -> machine.getFourStarRate();
+            case THREE_STAR -> machine.getThreeStarRate();
+        };
+
+        double totalWeightForRarity = allRewards.stream()
+            .filter(r -> r.getRarity() == reward.getRarity())
+            .mapToDouble(GachaReward::getWeight)
+            .sum();
+
+        if (totalWeightForRarity == 0) return 0;
+
+        return (rarityRate / 100.0) * (reward.getWeight() / totalWeightForRarity) * 100.0;
+    }
+
+    /**
+     * Envoie une demande d'ajout de récompense gacha (appelé depuis le client admin).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaAdminAddReward(BlockPos machinePos, String itemId, com.zetsumei.nocoin.gacha.GachaRarity rarity, String displayName, double weight) {
+        CHANNEL.sendToServer(new GachaAdminAddRewardPacket(machinePos, itemId, rarity, displayName, weight));
+    }
+
+    /**
+     * Envoie une demande de suppression de récompense gacha (appelé depuis le client admin).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaAdminRemoveReward(BlockPos machinePos, String itemId) {
+        CHANNEL.sendToServer(new GachaAdminRemoveRewardPacket(machinePos, itemId));
+    }
+
+    /**
+     * Envoie une demande de modification du poids d'une récompense (appelé depuis le client admin).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaAdminModifyWeight(BlockPos machinePos, String itemId, double newWeight) {
+        CHANNEL.sendToServer(new GachaAdminModifyRewardPacket(machinePos, itemId, newWeight));
+    }
+
+    /**
+     * Envoie une demande de modification de la rareté d'une récompense (appelé depuis le client admin).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaAdminModifyRarity(BlockPos machinePos, String itemId, com.zetsumei.nocoin.gacha.GachaRarity newRarity) {
+        CHANNEL.sendToServer(new GachaAdminModifyRewardPacket(machinePos, itemId, newRarity));
+    }
+
+    /**
+     * Envoie une demande de modification des probabilités de rareté (appelé depuis le client admin).
+     * @param machinePos la position de la machine gacha
+     */
+    public static void sendGachaAdminSetRates(BlockPos machinePos, double fiveStarRate, double fourStarRate, double threeStarRate) {
+        CHANNEL.sendToServer(new GachaAdminSetRatesPacket(machinePos, fiveStarRate, fourStarRate, threeStarRate));
     }
 }

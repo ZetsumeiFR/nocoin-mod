@@ -1,5 +1,6 @@
 package com.zetsumei.nocoin.block;
 
+import com.zetsumei.nocoin.block.entity.GachaMachineBlockEntity;
 import com.zetsumei.nocoin.item.ModItems;
 import com.zetsumei.nocoin.network.NocoinNetworkHandler;
 import net.minecraft.core.BlockPos;
@@ -12,9 +13,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -23,11 +26,14 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
+import javax.annotation.Nullable;
+
 /**
  * Machine à Gacha - Bloc interactif pour effectuer des tirages.
  * Le joueur doit avoir une Clé Gacha pour utiliser la machine.
+ * Chaque machine possède son propre catalogue de récompenses indépendant.
  */
-public class GachaMachineBlock extends Block {
+public class GachaMachineBlock extends BaseEntityBlock {
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -66,6 +72,12 @@ public class GachaMachineBlock extends Block {
         return RenderShape.MODEL;
     }
 
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new GachaMachineBlockEntity(pos, state);
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (level.isClientSide) {
@@ -76,13 +88,21 @@ public class GachaMachineBlock extends Block {
             return InteractionResult.PASS;
         }
 
-        // Vérifier si le joueur a une Clé Gacha
-        ItemStack heldItem = player.getItemInHand(hand);
-        boolean hasKey = hasGachaKey(player);
-
-        // Ouvrir l'interface de la machine
         if (player instanceof ServerPlayer serverPlayer) {
-            NocoinNetworkHandler.sendOpenGachaMachineScreen(serverPlayer, hasKey, countGachaKeys(player));
+            BlockEntity be = level.getBlockEntity(pos);
+            if (!(be instanceof GachaMachineBlockEntity gachaBE)) {
+                return InteractionResult.FAIL;
+            }
+
+            // Shift+clic droit avec permission admin → ouvre l'écran d'administration
+            if (player.isShiftKeyDown() && serverPlayer.hasPermissions(2)) {
+                NocoinNetworkHandler.sendOpenGachaAdminScreen(serverPlayer, pos);
+                return InteractionResult.CONSUME;
+            }
+
+            // Comportement normal : ouvrir l'interface de la machine
+            boolean hasKey = hasGachaKey(player);
+            NocoinNetworkHandler.sendOpenGachaMachineScreen(serverPlayer, pos, hasKey, countGachaKeys(player));
         }
 
         return InteractionResult.CONSUME;
@@ -117,5 +137,13 @@ public class GachaMachineBlock extends Block {
     public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
         // La machine émet une légère lumière
         return 7;
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            // Le bloc est détruit, le BlockEntity et son catalogue seront perdus
+            super.onRemove(state, level, pos, newState, isMoving);
+        }
     }
 }

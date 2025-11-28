@@ -2,6 +2,7 @@ package com.zetsumei.nocoin.network;
 
 import com.zetsumei.nocoin.client.ClientGachaMachineHandler;
 import java.util.function.Supplier;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -9,13 +10,16 @@ import net.minecraftforge.network.NetworkEvent;
 
 /**
  * Paquet serveur → client pour ouvrir l'écran de la machine à Gacha.
+ * Inclut la position de la machine pour identifier le catalogue à utiliser.
  */
 public class OpenGachaMachinePacket {
 
+    private final BlockPos machinePos;
     private final boolean hasKey;
     private final int keyCount;
 
-    public OpenGachaMachinePacket(boolean hasKey, int keyCount) {
+    public OpenGachaMachinePacket(BlockPos machinePos, boolean hasKey, int keyCount) {
+        this.machinePos = machinePos;
         this.hasKey = hasKey;
         this.keyCount = keyCount;
     }
@@ -24,14 +28,16 @@ public class OpenGachaMachinePacket {
         OpenGachaMachinePacket packet,
         FriendlyByteBuf buffer
     ) {
+        buffer.writeBlockPos(packet.machinePos);
         buffer.writeBoolean(packet.hasKey);
         buffer.writeInt(packet.keyCount);
     }
 
     public static OpenGachaMachinePacket decode(FriendlyByteBuf buffer) {
+        BlockPos machinePos = buffer.readBlockPos();
         boolean hasKey = buffer.readBoolean();
         int keyCount = buffer.readInt();
-        return new OpenGachaMachinePacket(hasKey, keyCount);
+        return new OpenGachaMachinePacket(machinePos, hasKey, keyCount);
     }
 
     public static void handle(
@@ -46,6 +52,7 @@ public class OpenGachaMachinePacket {
                 () ->
                     () ->
                         ClientGachaMachineHandler.openGachaMachineScreen(
+                            packet.machinePos,
                             packet.hasKey,
                             packet.keyCount
                         )

@@ -1,27 +1,36 @@
 package com.zetsumei.nocoin.network;
 
+import com.zetsumei.nocoin.block.entity.GachaMachineBlockEntity;
 import com.zetsumei.nocoin.gacha.GachaManager;
 import com.zetsumei.nocoin.item.ModItems;
 import java.util.function.Supplier;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
  * Paquet client → serveur pour demander un tirage Gacha.
+ * Inclut la position de la machine pour tirer depuis le bon catalogue.
  */
 public class GachaPullPacket {
 
-    public GachaPullPacket() {}
+    private final BlockPos machinePos;
+
+    public GachaPullPacket(BlockPos machinePos) {
+        this.machinePos = machinePos;
+    }
 
     public static void encode(GachaPullPacket packet, FriendlyByteBuf buffer) {
-        // Rien à encoder
+        buffer.writeBlockPos(packet.machinePos);
     }
 
     public static GachaPullPacket decode(FriendlyByteBuf buffer) {
-        return new GachaPullPacket();
+        return new GachaPullPacket(buffer.readBlockPos());
     }
 
     public static void handle(
@@ -32,6 +41,32 @@ public class GachaPullPacket {
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player == null) return;
+
+            // Récupérer le BlockEntity de la machine
+            Level level = player.level();
+            BlockEntity be = level.getBlockEntity(packet.machinePos);
+            if (!(be instanceof GachaMachineBlockEntity gachaBE)) {
+                NocoinNetworkHandler.sendGachaPullResult(
+                    player,
+                    false,
+                    null,
+                    0,
+                    "invalid_machine"
+                );
+                return;
+            }
+
+            // Vérifier si le catalogue de la machine n'est pas vide
+            if (gachaBE.getRewardCount() == 0) {
+                NocoinNetworkHandler.sendGachaPullResult(
+                    player,
+                    false,
+                    null,
+                    0,
+                    "empty_catalog"
+                );
+                return;
+            }
 
             // Vérifier si le joueur a une clé Gacha
             int keySlot = findGachaKeySlot(player);
@@ -51,9 +86,25 @@ public class GachaPullPacket {
             ItemStack keyStack = player.getInventory().getItem(keySlot);
             keyStack.shrink(1);
 
-            // Effectuer le tirage
-            GachaManager.GachaPullResult result =
-                GachaManager.getInstance().pullAndGive(player);
+            // Effectuer le tirage depuis le catalogue de cette machine
+            GachaManager.GachaPullResult result = gachaBE.pull();
+            
+            if (result == null) {
+                NocoinNetworkHandler.sendGachaPullResult(
+                    player,
+                    false,
+                    null,
+                    0,
+                    "pull_failed"
+                );
+                return;
+            }
+
+            // Donner l'item au joueur
+            ItemStack rewardStack = result.reward().createStack();
+            if (!player.getInventory().add(rewardStack)) {
+                player.drop(rewardStack, false);
+            }
 
             // Compter les clés restantes
             int remainingKeys = countGachaKeys(player);
@@ -62,7 +113,7 @@ public class GachaPullPacket {
             NocoinNetworkHandler.sendGachaPullResult(
                 player,
                 true,
-                result.reward().getItem().getDescriptionId(),
+                result.reward().getItemId(),
                 result.getRarity().getStars(),
                 result.getCharacterName()
             );

@@ -117,6 +117,29 @@ public class GachaReward {
         return new GachaReward(itemId, rarity, displayName, weight);
     }
 
+    /**
+     * Sérialise vers NBT CompoundTag.
+     */
+    public net.minecraft.nbt.CompoundTag toNbt() {
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        tag.putString("itemId", itemId);
+        tag.putString("rarity", rarity.name());
+        tag.putString("displayName", displayName);
+        tag.putDouble("weight", weight);
+        return tag;
+    }
+
+    /**
+     * Désérialise depuis NBT CompoundTag.
+     */
+    public static GachaReward fromNbt(net.minecraft.nbt.CompoundTag tag) {
+        String itemId = tag.getString("itemId");
+        GachaRarity rarity = GachaRarity.valueOf(tag.getString("rarity"));
+        String displayName = tag.getString("displayName");
+        double weight = tag.getDouble("weight");
+        return new GachaReward(itemId, rarity, displayName, weight);
+    }
+
     @Override
     public String toString() {
         return String.format("GachaReward{item=%s, rarity=%s, name=%s, weight=%.2f}",
