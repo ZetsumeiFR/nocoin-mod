@@ -38,17 +38,6 @@ public class ModBlocks {
                     .lightLevel(state -> 7)));
 
     /**
-     * Magasin Joueur - Permet aux joueurs de créer leurs propres boutiques.
-     */
-    public static final RegistryObject<Block> PLAYER_SHOP = registerBlock("player_shop",
-            () -> new PlayerShopBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.WOOD)
-                    .strength(2.5F, 3.0F)
-                    .sound(SoundType.WOOD)
-                    .noOcclusion()
-                    .lightLevel(state -> 5)));
-
-    /**
      * Leaderboard - Panneau d'affichage du classement des joueurs.
      * Affiche le top 10 en 3D avec un effet holographique.
      * Parfait pour être placé au spawn!

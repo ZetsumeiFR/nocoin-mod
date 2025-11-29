@@ -17,16 +17,6 @@ public class ModBlockEntities {
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, Nocoin.MODID);
 
     /**
-     * BlockEntity pour le magasin joueur.
-     */
-    public static final RegistryObject<BlockEntityType<PlayerShopBlockEntity>> PLAYER_SHOP =
-            BLOCK_ENTITIES.register("player_shop",
-                    () -> BlockEntityType.Builder.of(
-                            PlayerShopBlockEntity::new,
-                            ModBlocks.PLAYER_SHOP.get()
-                    ).build(null));
-
-    /**
      * BlockEntity pour le panneau de classement.
      */
     public static final RegistryObject<BlockEntityType<LeaderboardBlockEntity>> LEADERBOARD =

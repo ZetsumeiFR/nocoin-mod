@@ -3,7 +3,6 @@ package com.zetsumei.nocoin.network;
 import com.zetsumei.nocoin.Config;
 import com.zetsumei.nocoin.Nocoin;
 import com.zetsumei.nocoin.block.entity.GachaMachineBlockEntity;
-import com.zetsumei.nocoin.block.entity.PlayerShopBlockEntity;
 import com.zetsumei.nocoin.capability.NocoinCapabilityProvider;
 import com.zetsumei.nocoin.gacha.GachaHistory;
 import com.zetsumei.nocoin.gacha.GachaHistoryManager;
@@ -12,7 +11,6 @@ import com.zetsumei.nocoin.gacha.GachaReward;
 import com.zetsumei.nocoin.leaderboard.LeaderboardEntry;
 import com.zetsumei.nocoin.leaderboard.LeaderboardManager;
 import com.zetsumei.nocoin.network.gacha.*;
-import com.zetsumei.nocoin.network.player.*;
 import com.zetsumei.nocoin.shop.ShopManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,79 +142,6 @@ public class NocoinNetworkHandler {
             GachaPullResultPacket::encode,
             GachaPullResultPacket::decode,
             GachaPullResultPacket::handle
-        );
-
-        // Paquets pour le magasin joueur
-        CHANNEL.registerMessage(
-            packetId++,
-            OpenPlayerShopOwnerPacket.class,
-            OpenPlayerShopOwnerPacket::encode,
-            OpenPlayerShopOwnerPacket::decode,
-            OpenPlayerShopOwnerPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            OpenPlayerShopCustomerPacket.class,
-            OpenPlayerShopCustomerPacket::encode,
-            OpenPlayerShopCustomerPacket::decode,
-            OpenPlayerShopCustomerPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            AddShopOfferPacket.class,
-            AddShopOfferPacket::encode,
-            AddShopOfferPacket::decode,
-            AddShopOfferPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            RemoveShopOfferPacket.class,
-            RemoveShopOfferPacket::encode,
-            RemoveShopOfferPacket::decode,
-            RemoveShopOfferPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            UpdateShopNamePacket.class,
-            UpdateShopNamePacket::encode,
-            UpdateShopNamePacket::decode,
-            UpdateShopNamePacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            PlayerShopTransactionPacket.class,
-            PlayerShopTransactionPacket::encode,
-            PlayerShopTransactionPacket::decode,
-            PlayerShopTransactionPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            PlayerShopTransactionResultPacket.class,
-            PlayerShopTransactionResultPacket::encode,
-            PlayerShopTransactionResultPacket::decode,
-            PlayerShopTransactionResultPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            UpdateOfferStockPacket.class,
-            UpdateOfferStockPacket::encode,
-            UpdateOfferStockPacket::decode,
-            UpdateOfferStockPacket::handle
-        );
-
-        CHANNEL.registerMessage(
-            packetId++,
-            UpdateOfferPacket.class,
-            UpdateOfferPacket::encode,
-            UpdateOfferPacket::decode,
-            UpdateOfferPacket::handle
         );
 
         // Paquets pour le classement
@@ -487,199 +412,6 @@ public class NocoinNetworkHandler {
         );
     }
 
-    // =============== Méthodes pour le Magasin Joueur ===============
-
-    /**
-     * Envoie l'ouverture de l'écran propriétaire du magasin joueur au client.
-     * @param player le joueur destinataire
-     * @param shopPos la position du magasin
-     * @param shopEntity l'entité du magasin
-     */
-    public static void sendOpenPlayerShopOwnerScreen(
-        ServerPlayer player,
-        BlockPos shopPos,
-        PlayerShopBlockEntity shopEntity
-    ) {
-        player
-            .getCapability(NocoinCapabilityProvider.NOCOIN_CAPABILITY)
-            .ifPresent(cap -> {
-                CHANNEL.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new OpenPlayerShopOwnerPacket(
-                        shopPos,
-                        shopEntity.getShopName(),
-                        shopEntity.getOwnerName(),
-                        shopEntity.getOffers(),
-                        cap.getBalance()
-                    )
-                );
-            });
-    }
-
-    /**
-     * Envoie l'ouverture de l'écran client du magasin joueur au client.
-     * @param player le joueur destinataire
-     * @param shopPos la position du magasin
-     * @param shopEntity l'entité du magasin
-     */
-    public static void sendOpenPlayerShopCustomerScreen(
-        ServerPlayer player,
-        BlockPos shopPos,
-        PlayerShopBlockEntity shopEntity
-    ) {
-        player
-            .getCapability(NocoinCapabilityProvider.NOCOIN_CAPABILITY)
-            .ifPresent(cap -> {
-                CHANNEL.send(
-                    PacketDistributor.PLAYER.with(() -> player),
-                    new OpenPlayerShopCustomerPacket(
-                        shopPos,
-                        shopEntity.getShopName(),
-                        shopEntity.getOwnerName(),
-                        shopEntity.getSellOffers(),
-                        shopEntity.getBuyOffers(),
-                        cap.getBalance()
-                    )
-                );
-            });
-    }
-
-    /**
-     * Envoie une demande d'ajout d'offre au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param type le type d'offre (SELL/BUY)
-     * @param itemId l'ID de l'item
-     * @param quantity la quantité
-     * @param pricePerUnit le prix par unité
-     * @param stock le stock initial
-     */
-    public static void sendAddShopOffer(
-        BlockPos shopPos,
-        com.zetsumei.nocoin.shop.player.ShopOffer.OfferType type,
-        String itemId,
-        int quantity,
-        long pricePerUnit,
-        int stock
-    ) {
-        CHANNEL.sendToServer(
-            new AddShopOfferPacket(
-                shopPos,
-                type,
-                itemId,
-                quantity,
-                pricePerUnit,
-                stock
-            )
-        );
-    }
-
-    /**
-     * Envoie une demande de suppression d'offre au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param offerId l'ID de l'offre
-     */
-    public static void sendRemoveShopOffer(
-        BlockPos shopPos,
-        java.util.UUID offerId
-    ) {
-        CHANNEL.sendToServer(new RemoveShopOfferPacket(shopPos, offerId));
-    }
-
-    /**
-     * Envoie une demande de mise à jour du nom du magasin au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param newName le nouveau nom
-     */
-    public static void sendUpdateShopName(BlockPos shopPos, String newName) {
-        CHANNEL.sendToServer(new UpdateShopNamePacket(shopPos, newName));
-    }
-
-    /**
-     * Envoie une demande de transaction au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param offerId l'ID de l'offre
-     * @param isBuying true si achat, false si vente
-     */
-    public static void sendPlayerShopTransaction(
-        BlockPos shopPos,
-        java.util.UUID offerId,
-        boolean isBuying
-    ) {
-        PlayerShopTransactionPacket.TransactionType type = isBuying
-            ? PlayerShopTransactionPacket.TransactionType.BUY
-            : PlayerShopTransactionPacket.TransactionType.SELL;
-        CHANNEL.sendToServer(
-            new PlayerShopTransactionPacket(shopPos, offerId, type)
-        );
-    }
-
-    /**
-     * Envoie le résultat d'une transaction au client.
-     * @param player le joueur destinataire
-     * @param success si la transaction a réussi
-     * @param status le statut de la transaction
-     * @param amountTransferred le montant transféré
-     */
-    public static void sendPlayerShopTransactionResult(
-        ServerPlayer player,
-        boolean success,
-        PlayerShopBlockEntity.TransactionResult.Status status,
-        long amountTransferred
-    ) {
-        CHANNEL.send(
-            PacketDistributor.PLAYER.with(() -> player),
-            new PlayerShopTransactionResultPacket(
-                success,
-                status,
-                amountTransferred
-            )
-        );
-    }
-
-    /**
-     * Envoie une demande de mise à jour du stock d'une offre au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param offerId l'ID de l'offre
-     * @param action l'action (ADD ou REMOVE)
-     * @param amount la quantité à ajouter/retirer
-     */
-    public static void sendUpdateOfferStock(
-        BlockPos shopPos,
-        java.util.UUID offerId,
-        UpdateOfferStockPacket.Action action,
-        int amount
-    ) {
-        CHANNEL.sendToServer(
-            new UpdateOfferStockPacket(shopPos, offerId, action, amount)
-        );
-    }
-
-    /**
-     * Envoie une demande de modification d'une offre au serveur (appelé depuis le client).
-     * @param shopPos la position du magasin
-     * @param offerId l'ID de l'offre à modifier
-     * @param newPricePerUnit le nouveau prix par unité
-     * @param newQuantity la nouvelle quantité
-     * @param active si l'offre est active
-     */
-    public static void sendUpdateOffer(
-        BlockPos shopPos,
-        java.util.UUID offerId,
-        long newPricePerUnit,
-        int newQuantity,
-        boolean active
-    ) {
-        CHANNEL.sendToServer(
-            new UpdateOfferPacket(
-                shopPos,
-                offerId,
-                newPricePerUnit,
-                newQuantity,
-                active
-            )
-        );
-    }
-
     // =============== Méthodes pour le Classement ===============
 
     /**
@@ -701,9 +433,8 @@ public class NocoinNetworkHandler {
         ServerPlayer player,
         LeaderboardManager.LeaderboardType type
     ) {
-        List<LeaderboardEntry> entries = LeaderboardManager.getLeaderboardByNocoin(
-            player.getServer()
-        );
+        List<LeaderboardEntry> entries =
+            LeaderboardManager.getLeaderboardByNocoin(player.getServer());
 
         String playerName = player.getGameProfile().getName();
         CHANNEL.send(
@@ -740,7 +471,10 @@ public class NocoinNetworkHandler {
      * @param player le joueur destinataire
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaCatalogToClient(ServerPlayer player, BlockPos machinePos) {
+    public static void sendGachaCatalogToClient(
+        ServerPlayer player,
+        BlockPos machinePos
+    ) {
         Level level = player.level();
         BlockEntity be = level.getBlockEntity(machinePos);
         if (!(be instanceof GachaMachineBlockEntity gachaBE)) {
@@ -751,42 +485,31 @@ public class NocoinNetworkHandler {
         List<GachaCatalogPacket.CatalogEntry> entries = new ArrayList<>();
 
         for (GachaReward reward : rewards) {
-            double effectiveChance = calculateEffectiveChanceForMachine(reward, rewards, gachaBE);
-            entries.add(new GachaCatalogPacket.CatalogEntry(
-                reward.getItemId(),
-                reward.getDisplayName(),
-                reward.getRarity(),
-                reward.getWeight(),
-                effectiveChance
-            ));
+            double effectiveChance = calculateEffectiveChanceForMachine(
+                reward,
+                rewards,
+                gachaBE
+            );
+            entries.add(
+                new GachaCatalogPacket.CatalogEntry(
+                    reward.getItemId(),
+                    reward.getDisplayName(),
+                    reward.getRarity(),
+                    reward.getWeight(),
+                    effectiveChance
+                )
+            );
         }
 
         CHANNEL.send(
             PacketDistributor.PLAYER.with(() -> player),
-            new GachaCatalogPacket(entries, 
+            new GachaCatalogPacket(
+                entries,
                 gachaBE.getFiveStarRate(),
                 gachaBE.getFourStarRate(),
-                gachaBE.getThreeStarRate())
+                gachaBE.getThreeStarRate()
+            )
         );
-    }
-
-    /**
-     * Calcule la probabilité effective d'une récompense (méthode globale, legacy).
-     */
-    private static double calculateEffectiveChance(GachaReward reward, List<GachaReward> allRewards) {
-        double rarityRate = switch (reward.getRarity()) {
-            case FIVE_STAR -> GachaManager.getFiveStarRate();
-            case FOUR_STAR -> GachaManager.getFourStarRate();
-            case THREE_STAR -> GachaManager.getThreeStarRate();
-        };
-
-        double totalWeightInRarity = allRewards.stream()
-            .filter(r -> r.getRarity() == reward.getRarity())
-            .mapToDouble(GachaReward::getWeight)
-            .sum();
-
-        if (totalWeightInRarity == 0) return 0;
-        return (reward.getWeight() / totalWeightInRarity) * rarityRate;
     }
 
     /**
@@ -802,7 +525,8 @@ public class NocoinNetworkHandler {
      * @param player le joueur destinataire
      */
     public static void sendGachaHistoryToClient(ServerPlayer player) {
-        List<GachaHistory> histories = GachaHistoryManager.getInstance().getHistory(player.getUUID());
+        List<GachaHistory> histories =
+            GachaHistoryManager.getInstance().getHistory(player.getUUID());
         CHANNEL.send(
             PacketDistributor.PLAYER.with(() -> player),
             new GachaHistoryPacket(histories)
@@ -816,7 +540,10 @@ public class NocoinNetworkHandler {
      * @param machinePos la position de la machine gacha
      * @param count le nombre de tirages (max 10)
      */
-    public static void sendGachaMultiPullRequest(BlockPos machinePos, int count) {
+    public static void sendGachaMultiPullRequest(
+        BlockPos machinePos,
+        int count
+    ) {
         CHANNEL.sendToServer(new GachaMultiPullPacket(machinePos, count));
     }
 
@@ -844,7 +571,10 @@ public class NocoinNetworkHandler {
      * @param player le joueur admin
      * @param machinePos la position de la machine gacha
      */
-    public static void sendOpenGachaAdminScreen(ServerPlayer player, BlockPos machinePos) {
+    public static void sendOpenGachaAdminScreen(
+        ServerPlayer player,
+        BlockPos machinePos
+    ) {
         if (!player.hasPermissions(2)) {
             return;
         }
@@ -859,82 +589,143 @@ public class NocoinNetworkHandler {
         List<GachaCatalogPacket.CatalogEntry> entries = new ArrayList<>();
 
         for (GachaReward reward : rewards) {
-            double effectiveChance = calculateEffectiveChanceForMachine(reward, rewards, gachaBE);
-            entries.add(new GachaCatalogPacket.CatalogEntry(
-                reward.getItemId(),
-                reward.getDisplayName(),
-                reward.getRarity(),
-                reward.getWeight(),
-                effectiveChance
-            ));
+            double effectiveChance = calculateEffectiveChanceForMachine(
+                reward,
+                rewards,
+                gachaBE
+            );
+            entries.add(
+                new GachaCatalogPacket.CatalogEntry(
+                    reward.getItemId(),
+                    reward.getDisplayName(),
+                    reward.getRarity(),
+                    reward.getWeight(),
+                    effectiveChance
+                )
+            );
         }
 
         CHANNEL.send(
             PacketDistributor.PLAYER.with(() -> player),
-            new OpenGachaAdminPacket(machinePos, entries,
+            new OpenGachaAdminPacket(
+                machinePos,
+                entries,
                 gachaBE.getFiveStarRate(),
                 gachaBE.getFourStarRate(),
-                gachaBE.getThreeStarRate())
+                gachaBE.getThreeStarRate()
+            )
         );
     }
 
     /**
      * Calcule la chance effective d'une récompense pour une machine spécifique.
      */
-    private static double calculateEffectiveChanceForMachine(GachaReward reward, List<GachaReward> allRewards, GachaMachineBlockEntity machine) {
+    private static double calculateEffectiveChanceForMachine(
+        GachaReward reward,
+        List<GachaReward> allRewards,
+        GachaMachineBlockEntity machine
+    ) {
         double rarityRate = switch (reward.getRarity()) {
             case FIVE_STAR -> machine.getFiveStarRate();
             case FOUR_STAR -> machine.getFourStarRate();
             case THREE_STAR -> machine.getThreeStarRate();
         };
 
-        double totalWeightForRarity = allRewards.stream()
+        double totalWeightForRarity = allRewards
+            .stream()
             .filter(r -> r.getRarity() == reward.getRarity())
             .mapToDouble(GachaReward::getWeight)
             .sum();
 
         if (totalWeightForRarity == 0) return 0;
 
-        return (rarityRate / 100.0) * (reward.getWeight() / totalWeightForRarity) * 100.0;
+        return (
+            (rarityRate / 100.0) *
+            (reward.getWeight() / totalWeightForRarity) *
+            100.0
+        );
     }
 
     /**
      * Envoie une demande d'ajout de récompense gacha (appelé depuis le client admin).
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaAdminAddReward(BlockPos machinePos, String itemId, com.zetsumei.nocoin.gacha.GachaRarity rarity, String displayName, double weight) {
-        CHANNEL.sendToServer(new GachaAdminAddRewardPacket(machinePos, itemId, rarity, displayName, weight));
+    public static void sendGachaAdminAddReward(
+        BlockPos machinePos,
+        String itemId,
+        com.zetsumei.nocoin.gacha.GachaRarity rarity,
+        String displayName,
+        double weight
+    ) {
+        CHANNEL.sendToServer(
+            new GachaAdminAddRewardPacket(
+                machinePos,
+                itemId,
+                rarity,
+                displayName,
+                weight
+            )
+        );
     }
 
     /**
      * Envoie une demande de suppression de récompense gacha (appelé depuis le client admin).
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaAdminRemoveReward(BlockPos machinePos, String itemId) {
-        CHANNEL.sendToServer(new GachaAdminRemoveRewardPacket(machinePos, itemId));
+    public static void sendGachaAdminRemoveReward(
+        BlockPos machinePos,
+        String itemId
+    ) {
+        CHANNEL.sendToServer(
+            new GachaAdminRemoveRewardPacket(machinePos, itemId)
+        );
     }
 
     /**
      * Envoie une demande de modification du poids d'une récompense (appelé depuis le client admin).
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaAdminModifyWeight(BlockPos machinePos, String itemId, double newWeight) {
-        CHANNEL.sendToServer(new GachaAdminModifyRewardPacket(machinePos, itemId, newWeight));
+    public static void sendGachaAdminModifyWeight(
+        BlockPos machinePos,
+        String itemId,
+        double newWeight
+    ) {
+        CHANNEL.sendToServer(
+            new GachaAdminModifyRewardPacket(machinePos, itemId, newWeight)
+        );
     }
 
     /**
      * Envoie une demande de modification de la rareté d'une récompense (appelé depuis le client admin).
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaAdminModifyRarity(BlockPos machinePos, String itemId, com.zetsumei.nocoin.gacha.GachaRarity newRarity) {
-        CHANNEL.sendToServer(new GachaAdminModifyRewardPacket(machinePos, itemId, newRarity));
+    public static void sendGachaAdminModifyRarity(
+        BlockPos machinePos,
+        String itemId,
+        com.zetsumei.nocoin.gacha.GachaRarity newRarity
+    ) {
+        CHANNEL.sendToServer(
+            new GachaAdminModifyRewardPacket(machinePos, itemId, newRarity)
+        );
     }
 
     /**
      * Envoie une demande de modification des probabilités de rareté (appelé depuis le client admin).
      * @param machinePos la position de la machine gacha
      */
-    public static void sendGachaAdminSetRates(BlockPos machinePos, double fiveStarRate, double fourStarRate, double threeStarRate) {
-        CHANNEL.sendToServer(new GachaAdminSetRatesPacket(machinePos, fiveStarRate, fourStarRate, threeStarRate));
+    public static void sendGachaAdminSetRates(
+        BlockPos machinePos,
+        double fiveStarRate,
+        double fourStarRate,
+        double threeStarRate
+    ) {
+        CHANNEL.sendToServer(
+            new GachaAdminSetRatesPacket(
+                machinePos,
+                fiveStarRate,
+                fourStarRate,
+                threeStarRate
+            )
+        );
     }
 }

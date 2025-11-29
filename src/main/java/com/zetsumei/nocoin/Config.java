@@ -77,6 +77,25 @@ public class Config {
         Config::validateShopItemEntry
     );
 
+    // ============== Configuration des Sign Shops ==============
+
+    private static final ForgeConfigSpec.IntValue SIGN_SHOP_ADMIN_LEVEL =
+        BUILDER.comment(
+            "Niveau de permission requis pour créer des sign shops serveur (server-buy, server-sell)",
+            "0 = tous les joueurs, 1 = modérateurs, 2 = game masters, 3 = admins, 4 = propriétaires"
+        ).defineInRange("signShopAdminLevel", 2, 0, 4);
+
+    private static final ForgeConfigSpec.IntValue SIGN_SHOP_PLAYER_LEVEL =
+        BUILDER.comment(
+            "Niveau de permission requis pour créer des sign shops joueur (buy, sell)",
+            "0 = tous les joueurs, 1 = modérateurs, 2 = game masters, 3 = admins, 4 = propriétaires"
+        ).defineInRange("signShopPlayerLevel", 0, 0, 4);
+
+    private static final ForgeConfigSpec.BooleanValue SIGN_SHOP_ENABLED =
+        BUILDER.comment(
+            "Active ou désactive le système de sign shops"
+        ).define("signShopEnabled", true);
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     // Variables accessibles depuis le code
@@ -86,6 +105,11 @@ public class Config {
     public static Map<String, Long> mobDrops;
     public static List<ShopItemConfig> shopItems;
     public static long gachaKeyPrice;
+    
+    // Variables Sign Shops
+    public static int signShopAdminLevel;
+    public static int signShopPlayerLevel;
+    public static boolean signShopEnabled;
 
     private static boolean validateMobDropEntry(final Object obj) {
         if (!(obj instanceof String entry)) {
@@ -166,6 +190,11 @@ public class Config {
         // Configuration Gacha
         gachaKeyPrice = GACHA_KEY_PRICE.get();
 
+        // Configuration Sign Shops
+        signShopAdminLevel = SIGN_SHOP_ADMIN_LEVEL.get();
+        signShopPlayerLevel = SIGN_SHOP_PLAYER_LEVEL.get();
+        signShopEnabled = SIGN_SHOP_ENABLED.get();
+
         // Recharger le ShopManager avec la nouvelle configuration
         com.zetsumei.nocoin.shop.ShopManager.getInstance().reloadFromConfig();
     }
@@ -211,5 +240,31 @@ public class Config {
         public boolean hasCustomDisplayName() {
             return displayName != null && !displayName.isEmpty();
         }
+    }
+
+    // ============== Getters Sign Shops ==============
+
+    /**
+     * Retourne le niveau de permission requis pour créer des sign shops serveur.
+     * @return Niveau de permission (0-4)
+     */
+    public static int getSignShopAdminLevel() {
+        return signShopAdminLevel;
+    }
+
+    /**
+     * Retourne le niveau de permission requis pour créer des sign shops joueur.
+     * @return Niveau de permission (0-4)
+     */
+    public static int getSignShopPlayerLevel() {
+        return signShopPlayerLevel;
+    }
+
+    /**
+     * Vérifie si le système de sign shops est activé.
+     * @return true si activé, false sinon
+     */
+    public static boolean isSignShopEnabled() {
+        return signShopEnabled;
     }
 }

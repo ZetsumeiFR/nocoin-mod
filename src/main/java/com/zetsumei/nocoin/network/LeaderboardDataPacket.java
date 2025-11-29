@@ -1,6 +1,5 @@
 package com.zetsumei.nocoin.network;
 
-import com.zetsumei.nocoin.client.ClientLeaderboardData;
 import com.zetsumei.nocoin.leaderboard.LeaderboardEntry;
 import com.zetsumei.nocoin.leaderboard.LeaderboardManager;
 import java.util.ArrayList;
@@ -58,34 +57,36 @@ public class LeaderboardDataPacket {
         return new LeaderboardDataPacket(type, entries, playerName);
     }
 
+    public LeaderboardManager.LeaderboardType getType() {
+        return type;
+    }
+
+    public List<LeaderboardEntry> getEntries() {
+        return entries;
+    }
+
+    public String getRequestingPlayerName() {
+        return requestingPlayerName;
+    }
+
     /**
      * Traite le paquet côté client.
      */
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx
-            .get()
-            .enqueueWork(() -> {
-                DistExecutor.unsafeRunWhenOn(
-                    Dist.CLIENT,
-                    () ->
-                        () -> {
-                            ClientLeaderboardData.setLeaderboardData(
-                                type,
-                                entries,
-                                requestingPlayerName
-                            );
-                            // Ouvrir l'écran du leaderboard si aucun écran n'est ouvert
-                            // (quand le joueur clique sur le bloc Leaderboard)
-                            net.minecraft.client.Minecraft mc =
-                                net.minecraft.client.Minecraft.getInstance();
-                            if (mc.screen == null) {
-                                mc.setScreen(
-                                    new com.zetsumei.nocoin.client.screen.LeaderboardScreen()
-                                );
-                            }
-                        }
-                );
-            });
+        final LeaderboardManager.LeaderboardType packetType = this.type;
+        final List<LeaderboardEntry> packetEntries = new ArrayList<>(this.entries);
+        final String packetPlayerName = this.requestingPlayerName;
+
+        ctx.get().enqueueWork(() -> {
+            // DistExecutor garantit que ce code ne s'exécute que côté client
+            // La classe LeaderboardClientHandler est dans le package client et
+            // n'est chargée que quand ce Runnable est exécuté (côté client uniquement)
+            // IMPORTANT: On utilise le nom complet sans import pour éviter le chargement
+            // de la classe sur le serveur dédié
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                () -> new com.zetsumei.nocoin.client.LeaderboardClientHandler(
+                    packetType, packetEntries, packetPlayerName));
+        });
         ctx.get().setPacketHandled(true);
     }
 }

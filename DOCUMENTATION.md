@@ -301,7 +301,6 @@ Idéal pour être placé au spawn du serveur pour que tous les joueurs puissent 
 | Bloc | ID | Description |
 |------|-----|-------------|
 | Machine à Gacha | `nocoin:gacha_machine` | Utilisez vos clés pour effectuer des tirages |
-| Magasin Joueur | `nocoin:player_shop` | Créez votre propre boutique |
 | Leaderboard | `nocoin:leaderboard` | Affiche le classement des joueurs |
 
 ### Entités
