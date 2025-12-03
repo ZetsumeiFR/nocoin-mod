@@ -1,0 +1,9 @@
+{
+  "parent": "nocoin:custom/neruminecraftplush",
+  "textures": {
+    "all": "nocoin:blocks/neruplushietexture",
+    "particle": "nocoin:blocks/neruplushietexture",
+    "0": "nocoin:blocks/neruplushietexture"
+  },
+  "render_type": "cutout"
+}

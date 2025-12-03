@@ -84,7 +84,7 @@ public class SignShopEventHandler {
 
         if (shouldCancel) {
             if (event.getEntity() instanceof Player player) {
-                player.sendSystemMessage(Component.translatable("signshop.nocoin.cannot_place_near_shop")
+                player.sendSystemMessage(Component.literal("Vous ne pouvez pas placer de bloc à côté d'un shop")
                         .withStyle(ChatFormatting.RED));
             }
             event.setCanceled(true);
@@ -113,7 +113,7 @@ public class SignShopEventHandler {
                 // Vérifier si le joueur est le propriétaire ou admin
                 if (nbt.hasUUID(OWNER) && !nbt.getUUID(OWNER).equals(player.getUUID())) {
                     if (!hasAdminPerms) {
-                        player.sendSystemMessage(Component.translatable("signshop.nocoin.not_owner")
+                        player.sendSystemMessage(Component.literal("Vous n'êtes pas le propriétaire de ce shop")
                                 .withStyle(ChatFormatting.RED));
                         event.setCanceled(true);
                         return;
@@ -135,8 +135,15 @@ public class SignShopEventHandler {
             BlockEntity be = event.getLevel().getBlockEntity(event.getPos());
             if (be != null && be.getPersistentData().contains(IS_SHOP)) {
                 Player player = event.getPlayer();
-                if (!player.hasPermissions(Config.getSignShopAdminLevel())) {
-                    player.sendSystemMessage(Component.translatable("signshop.nocoin.cannot_break_shop_storage")
+                CompoundTag storageNbt = be.getPersistentData();
+                boolean hasAdminPerms = player.hasPermissions(Config.getSignShopAdminLevel());
+
+                // Chercher l'UUID du propriétaire - d'abord sur ce bloc, sinon sur un panneau shop adjacent
+                UUID ownerUUID = findShopOwner((Level) event.getLevel(), event.getPos(), storageNbt);
+                boolean isOwner = ownerUUID != null && ownerUUID.equals(player.getUUID());
+
+                if (!isOwner && !hasAdminPerms) {
+                    player.sendSystemMessage(Component.literal("Vous ne pouvez pas détruire le conteneur d'un shop")
                             .withStyle(ChatFormatting.RED));
                     event.setCanceled(true);
                 }
@@ -160,14 +167,53 @@ public class SignShopEventHandler {
 
         CompoundTag nbt = invTile.getPersistentData();
         if (nbt.contains(IS_SHOP)) {
-            if (!nbt.hasUUID(OWNER) || !nbt.getUUID(OWNER).equals(event.getEntity().getUUID())) {
+            // Chercher l'UUID du propriétaire - d'abord sur ce bloc, sinon sur un panneau shop adjacent
+            UUID ownerUUID = findShopOwner(event.getLevel(), event.getPos(), nbt);
+
+            if (ownerUUID == null || !ownerUUID.equals(event.getEntity().getUUID())) {
                 if (!event.getEntity().hasPermissions(Config.getSignShopAdminLevel())) {
-                    event.getEntity().sendSystemMessage(Component.translatable("signshop.nocoin.not_owner")
+                    event.getEntity().sendSystemMessage(Component.literal("Vous n'êtes pas le propriétaire de ce shop")
                             .withStyle(ChatFormatting.RED));
                     event.setCanceled(true);
                 }
             }
         }
+    }
+
+    /**
+     * Cherche l'UUID du propriétaire d'un shop.
+     * Vérifie d'abord le NBT du conteneur, puis les panneaux shop adjacents.
+     */
+    private static UUID findShopOwner(Level level, BlockPos containerPos, CompoundTag containerNbt) {
+        // D'abord, vérifier si l'OWNER est sur le conteneur lui-même
+        if (containerNbt.hasUUID(OWNER)) {
+            return containerNbt.getUUID(OWNER);
+        }
+
+        // Sinon, chercher un panneau shop adjacent qui pointe vers ce conteneur
+        for (Direction dir : Direction.values()) {
+            BlockPos adjacentPos = containerPos.relative(dir);
+            BlockState adjacentState = level.getBlockState(adjacentPos);
+
+            // Vérifier si c'est un panneau mural
+            if (adjacentState.getBlock() instanceof WallSignBlock) {
+                // Vérifier si le panneau pointe vers notre conteneur
+                Direction facing = adjacentState.getValue(WallSignBlock.FACING);
+                BlockPos backPos = adjacentPos.relative(facing.getOpposite());
+
+                if (backPos.equals(containerPos)) {
+                    BlockEntity signTile = level.getBlockEntity(adjacentPos);
+                    if (signTile instanceof SignBlockEntity) {
+                        CompoundTag signNbt = signTile.getPersistentData();
+                        if (signNbt.contains(ACTIVATED) && signNbt.hasUUID(OWNER)) {
+                            return signNbt.getUUID(OWNER);
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -243,7 +289,7 @@ public class SignShopEventHandler {
         String shopType = switch (actionLine) {
             case "[buy]" -> {
                 if (!player.hasPermissions(Config.getSignShopPlayerLevel())) {
-                    player.sendSystemMessage(Component.translatable("signshop.nocoin.no_permission")
+                    player.sendSystemMessage(Component.literal("Vous n'avez pas la permission de créer un shop")
                             .withStyle(ChatFormatting.RED));
                     yield null;
                 }
@@ -251,7 +297,7 @@ public class SignShopEventHandler {
             }
             case "[sell]" -> {
                 if (!player.hasPermissions(Config.getSignShopPlayerLevel())) {
-                    player.sendSystemMessage(Component.translatable("signshop.nocoin.no_permission")
+                    player.sendSystemMessage(Component.literal("Vous n'avez pas la permission de créer un shop")
                             .withStyle(ChatFormatting.RED));
                     yield null;
                 }
@@ -259,7 +305,7 @@ public class SignShopEventHandler {
             }
             case "[server-buy]" -> {
                 if (!player.hasPermissions(Config.getSignShopAdminLevel())) {
-                    player.sendSystemMessage(Component.translatable("signshop.nocoin.admin_only")
+                    player.sendSystemMessage(Component.literal("Seuls les administrateurs peuvent créer ce type de shop")
                             .withStyle(ChatFormatting.RED));
                     yield null;
                 }
@@ -267,7 +313,7 @@ public class SignShopEventHandler {
             }
             case "[server-sell]" -> {
                 if (!player.hasPermissions(Config.getSignShopAdminLevel())) {
-                    player.sendSystemMessage(Component.translatable("signshop.nocoin.admin_only")
+                    player.sendSystemMessage(Component.literal("Seuls les administrateurs peuvent créer ce type de shop")
                             .withStyle(ChatFormatting.RED));
                     yield null;
                 }
@@ -281,7 +327,7 @@ public class SignShopEventHandler {
         // Parser le nom de l'item (ligne 2)
         String itemName = frontText.getMessage(1, true).getString().trim();
         if (itemName.isEmpty()) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.missing_item_name")
+            player.sendSystemMessage(Component.literal("Veuillez spécifier le nom de l'item sur la ligne 2")
                     .withStyle(ChatFormatting.RED));
             return false;
         }
@@ -289,7 +335,7 @@ public class SignShopEventHandler {
         // Trouver l'item correspondant
         Item item = findItemByName(itemName);
         if (item == null) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.invalid_item", itemName)
+            player.sendSystemMessage(Component.literal("Item invalide : " + itemName)
                     .withStyle(ChatFormatting.RED));
             return false;
         }
@@ -300,12 +346,12 @@ public class SignShopEventHandler {
             String quantityLine = frontText.getMessage(2, true).getString().trim();
             quantity = Integer.parseInt(quantityLine);
             if (quantity <= 0 || quantity > 64 * 27) { // Max d'un grand coffre
-                player.sendSystemMessage(Component.translatable("signshop.nocoin.invalid_quantity")
+                player.sendSystemMessage(Component.literal("Quantité invalide")
                         .withStyle(ChatFormatting.RED));
                 return false;
             }
         } catch (NumberFormatException e) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.invalid_quantity")
+            player.sendSystemMessage(Component.literal("Quantité invalide")
                     .withStyle(ChatFormatting.RED));
             return false;
         }
@@ -316,12 +362,12 @@ public class SignShopEventHandler {
             String priceLine = frontText.getMessage(3, true).getString().trim();
             price = Math.abs(Long.parseLong(priceLine));
             if (price <= 0) {
-                player.sendSystemMessage(Component.translatable("signshop.nocoin.invalid_price")
+                player.sendSystemMessage(Component.literal("Prix invalide")
                         .withStyle(ChatFormatting.RED));
                 return false;
             }
         } catch (NumberFormatException e) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.invalid_price")
+            player.sendSystemMessage(Component.literal("Prix invalide")
                     .withStyle(ChatFormatting.RED));
             return false;
         }
@@ -334,7 +380,7 @@ public class SignShopEventHandler {
         if (shopType.equals("buy") || shopType.equals("server-buy")) {
             int available = countItemInContainer(inv, item);
             if (available < quantity) {
-                player.sendSystemMessage(Component.translatable("signshop.nocoin.insufficient_stock", quantity, available)
+                player.sendSystemMessage(Component.literal("Stock insuffisant : " + quantity + " requis, " + available + " disponibles")
                         .withStyle(ChatFormatting.RED));
                 return false;
             }
@@ -379,10 +425,9 @@ public class SignShopEventHandler {
         BlockState state = level.getBlockState(pos);
         level.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS);
 
-        player.sendSystemMessage(Component.translatable("signshop.nocoin.activated", shopType.toUpperCase())
+        player.sendSystemMessage(Component.literal("Shop " + shopType.toUpperCase() + " activé !")
                 .withStyle(ChatFormatting.GREEN));
-        player.sendSystemMessage(Component.translatable("signshop.nocoin.activated_details", 
-                quantity, displayItemName, formatCurrency(price))
+        player.sendSystemMessage(Component.literal(quantity + "x " + displayItemName + " pour " + formatCurrency(price))
                 .withStyle(ChatFormatting.GRAY));
 
         LOGGER.info("Sign shop activé par {} à {} (type: {}, item: {}, quantité: {}, prix: {})",
@@ -465,10 +510,10 @@ public class SignShopEventHandler {
         boolean isBuy = type.equals("buy") || type.equals("server-buy");
 
         if (isBuy) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.info.buy", itemsDisplay, formatCurrency(price))
+            player.sendSystemMessage(Component.literal("Acheter ").append(itemsDisplay).append(Component.literal(" pour " + formatCurrency(price)))
                     .withStyle(ChatFormatting.YELLOW));
         } else {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.info.sell", formatCurrency(price), itemsDisplay)
+            player.sendSystemMessage(Component.literal("Vendre pour " + formatCurrency(price) + " : ").append(itemsDisplay)
                     .withStyle(ChatFormatting.YELLOW));
         }
 
@@ -478,7 +523,7 @@ public class SignShopEventHandler {
             String ownerName = level.getServer() != null
                     ? level.getServer().getProfileCache().get(ownerUUID).map(p -> p.getName()).orElse("Inconnu")
                     : "Inconnu";
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.info.owner", ownerName)
+            player.sendSystemMessage(Component.literal("Propriétaire : " + ownerName)
                     .withStyle(ChatFormatting.GRAY));
         }
     }
@@ -514,7 +559,7 @@ public class SignShopEventHandler {
 
         IItemHandler inv = storage.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
         if (inv == null) {
-            player.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            player.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
 
@@ -523,7 +568,7 @@ public class SignShopEventHandler {
             case "sell" -> processSellTransaction(serverPlayer, nbt, inv, transItems, price);
             case "server-buy" -> processServerBuyTransaction(serverPlayer, nbt, price);
             case "server-sell" -> processServerSellTransaction(serverPlayer, nbt, price);
-            default -> player.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            default -> player.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
         }
     }
 
@@ -540,12 +585,12 @@ public class SignShopEventHandler {
         // Créer l'ItemStack à transférer avec la quantité exacte
         ResourceLocation rl = ResourceLocation.tryParse(itemId);
         if (rl == null) {
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            buyer.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         Item item = ForgeRegistries.ITEMS.getValue(rl);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            buyer.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         
@@ -555,7 +600,7 @@ public class SignShopEventHandler {
         // Vérifier le solde de l'acheteur
         buyer.getCapability(NocoinCapabilityProvider.NOCOIN_CAPABILITY).ifPresent(buyerCap -> {
             if (!buyerCap.hasEnough(price)) {
-                buyer.sendSystemMessage(Component.translatable("signshop.nocoin.insufficient_funds")
+                buyer.sendSystemMessage(Component.literal("Fonds insuffisants")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
@@ -563,14 +608,14 @@ public class SignShopEventHandler {
             // Vérifier le stock avec la quantité exacte
             Map<Integer, ItemStack> slotMap = checkAndReserveStock(inv, itemsToTransfer);
             if (slotMap == null) {
-                buyer.sendSystemMessage(Component.translatable("signshop.nocoin.out_of_stock")
+                buyer.sendSystemMessage(Component.literal("Stock épuisé")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             // Vérifier l'espace dans l'inventaire de l'acheteur
             if (!canAddItemsToInventory(buyer, itemsToTransfer)) {
-                buyer.sendSystemMessage(Component.translatable("signshop.nocoin.inventory_full")
+                buyer.sendSystemMessage(Component.literal("Inventaire plein")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
@@ -591,8 +636,7 @@ public class SignShopEventHandler {
                 }
             }
 
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.buy_success",
-                    buildItemsDisplay(itemsToTransfer), formatCurrency(price))
+            buyer.sendSystemMessage(Component.literal("Achat réussi : ").append(buildItemsDisplay(itemsToTransfer)).append(Component.literal(" pour " + formatCurrency(price)))
                     .withStyle(ChatFormatting.GREEN));
 
             LOGGER.info("Transaction BUY: {} a acheté {}x {} pour {} NC", 
@@ -614,12 +658,12 @@ public class SignShopEventHandler {
         
         ResourceLocation rl = ResourceLocation.tryParse(itemId);
         if (rl == null) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            seller.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         Item item = ForgeRegistries.ITEMS.getValue(rl);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            seller.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         
@@ -629,7 +673,7 @@ public class SignShopEventHandler {
         // Vérifier que le propriétaire a les fonds
         ServerPlayer owner = seller.getServer().getPlayerList().getPlayer(ownerUUID);
         if (owner == null) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.owner_offline")
+            seller.sendSystemMessage(Component.literal("Le propriétaire n'est pas en ligne")
                     .withStyle(ChatFormatting.RED));
             return;
         }
@@ -637,21 +681,21 @@ public class SignShopEventHandler {
         final boolean[] success = {false};
         owner.getCapability(NocoinCapabilityProvider.NOCOIN_CAPABILITY).ifPresent(ownerCap -> {
             if (!ownerCap.hasEnough(price)) {
-                seller.sendSystemMessage(Component.translatable("signshop.nocoin.owner_insufficient_funds")
+                seller.sendSystemMessage(Component.literal("Le propriétaire n'a pas assez de fonds")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             // Vérifier que le vendeur a les items (quantité exacte)
             if (!hasItemsInInventory(seller, itemsToTransfer)) {
-                seller.sendSystemMessage(Component.translatable("signshop.nocoin.insufficient_items")
+                seller.sendSystemMessage(Component.literal("Vous n'avez pas assez d'items")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             // Vérifier l'espace dans le conteneur
             if (!canAddItemsToContainer(inv, itemsToTransfer)) {
-                seller.sendSystemMessage(Component.translatable("signshop.nocoin.shop_full")
+                seller.sendSystemMessage(Component.literal("Le shop est plein")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
@@ -668,12 +712,10 @@ public class SignShopEventHandler {
                 removeItemsFromInventory(seller, itemsToTransfer);
                 addItemsToContainer(inv, itemsToTransfer);
 
-                seller.sendSystemMessage(Component.translatable("signshop.nocoin.sell_success",
-                        formatCurrency(price), buildItemsDisplay(itemsToTransfer))
+                seller.sendSystemMessage(Component.literal("Vente réussie : " + formatCurrency(price) + " pour ").append(buildItemsDisplay(itemsToTransfer))
                         .withStyle(ChatFormatting.GREEN));
 
-                owner.sendSystemMessage(Component.translatable("signshop.nocoin.shop_sold",
-                        seller.getName().getString(), buildItemsDisplay(itemsToTransfer), formatCurrency(price))
+                owner.sendSystemMessage(Component.literal(seller.getName().getString() + " a vendu ").append(buildItemsDisplay(itemsToTransfer)).append(Component.literal(" pour " + formatCurrency(price)))
                         .withStyle(ChatFormatting.AQUA));
 
                 success[0] = true;
@@ -697,12 +739,12 @@ public class SignShopEventHandler {
         
         ResourceLocation rl = ResourceLocation.tryParse(itemId);
         if (rl == null) {
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            buyer.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         Item item = ForgeRegistries.ITEMS.getValue(rl);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            buyer.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         
@@ -711,14 +753,14 @@ public class SignShopEventHandler {
         
         buyer.getCapability(NocoinCapabilityProvider.NOCOIN_CAPABILITY).ifPresent(buyerCap -> {
             if (!buyerCap.hasEnough(price)) {
-                buyer.sendSystemMessage(Component.translatable("signshop.nocoin.insufficient_funds")
+                buyer.sendSystemMessage(Component.literal("Fonds insuffisants")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
 
             // Vérifier l'espace inventaire
             if (!canAddItemsToInventory(buyer, itemsToTransfer)) {
-                buyer.sendSystemMessage(Component.translatable("signshop.nocoin.inventory_full")
+                buyer.sendSystemMessage(Component.literal("Inventaire plein")
                         .withStyle(ChatFormatting.RED));
                 return;
             }
@@ -733,8 +775,7 @@ public class SignShopEventHandler {
                 buyer.drop(toGive, false);
             }
 
-            buyer.sendSystemMessage(Component.translatable("signshop.nocoin.buy_success",
-                    buildItemsDisplay(itemsToTransfer), formatCurrency(price))
+            buyer.sendSystemMessage(Component.literal("Achat réussi : ").append(buildItemsDisplay(itemsToTransfer)).append(Component.literal(" pour " + formatCurrency(price)))
                     .withStyle(ChatFormatting.GREEN));
 
             LOGGER.info("Transaction SERVER-BUY: {} a acheté {}x {} pour {} NC au serveur",
@@ -753,12 +794,12 @@ public class SignShopEventHandler {
         
         ResourceLocation rl = ResourceLocation.tryParse(itemId);
         if (rl == null) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            seller.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         Item item = ForgeRegistries.ITEMS.getValue(rl);
         if (item == null || item == net.minecraft.world.item.Items.AIR) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.error").withStyle(ChatFormatting.RED));
+            seller.sendSystemMessage(Component.literal("Erreur lors de la transaction").withStyle(ChatFormatting.RED));
             return;
         }
         
@@ -767,7 +808,7 @@ public class SignShopEventHandler {
         
         // Vérifier que le vendeur a les items (quantité exacte)
         if (!hasItemsInInventory(seller, itemsToTransfer)) {
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.insufficient_items")
+            seller.sendSystemMessage(Component.literal("Vous n'avez pas assez d'items")
                     .withStyle(ChatFormatting.RED));
             return;
         }
@@ -778,8 +819,7 @@ public class SignShopEventHandler {
             sellerCap.addBalance(price);
             NocoinNetworkHandler.sendBalanceToClient(seller, sellerCap.getBalance());
 
-            seller.sendSystemMessage(Component.translatable("signshop.nocoin.sell_success",
-                    formatCurrency(price), buildItemsDisplay(itemsToTransfer))
+            seller.sendSystemMessage(Component.literal("Vente réussie : " + formatCurrency(price) + " pour ").append(buildItemsDisplay(itemsToTransfer))
                     .withStyle(ChatFormatting.GREEN));
 
             LOGGER.info("Transaction SERVER-SELL: {} a vendu {}x {} pour {} NC au serveur",

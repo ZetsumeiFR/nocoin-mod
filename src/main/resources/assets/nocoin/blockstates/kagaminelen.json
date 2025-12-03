@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "nocoin:block/kagaminelen"
+    },
+    "facing=east": {
+      "model": "nocoin:block/kagaminelen",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "nocoin:block/kagaminelen",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "nocoin:block/kagaminelen",
+      "y": 270
+    }
+  }
+}

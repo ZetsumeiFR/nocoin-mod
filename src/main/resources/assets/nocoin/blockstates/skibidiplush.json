@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "nocoin:block/skibidiplush"
+    },
+    "facing=east": {
+      "model": "nocoin:block/skibidiplush",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "nocoin:block/skibidiplush",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "nocoin:block/skibidiplush",
+      "y": 270
+    }
+  }
+}

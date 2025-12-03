@@ -1,0 +1,9 @@
+{
+  "parent": "nocoin:custom/rinminecrftplush2",
+  "textures": {
+    "all": "nocoin:blocks/rinplushietexture2",
+    "particle": "nocoin:blocks/rinplushietexture2",
+    "0": "nocoin:blocks/rinplushietexture2"
+  },
+  "render_type": "cutout"
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "nocoin:custom/skibiditoiletplush",
+  "textures": {
+    "all": "nocoin:blocks/skiskiskibiditoiletplushtexture",
+    "particle": "nocoin:blocks/skiskiskibiditoiletplushtexture",
+    "0": "nocoin:blocks/skiskiskibiditoiletplushtexture"
+  },
+  "render_type": "cutout"
+}

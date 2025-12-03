@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "nocoin:block/neruplush"
+    },
+    "facing=east": {
+      "model": "nocoin:block/neruplush",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "nocoin:block/neruplush",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "nocoin:block/neruplush",
+      "y": 270
+    }
+  }
+}

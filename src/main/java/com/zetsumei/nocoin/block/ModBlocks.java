@@ -51,6 +51,58 @@ public class ModBlocks {
                     .noOcclusion()
                     .lightLevel(state -> 10)));
 
+    // ==================== BLOCS DÉCORATIFS - PELUCHES ====================
+
+    /**
+     * Peluche Hatsune Miku - Bloc décoratif Vocaloid.
+     */
+    public static final RegistryObject<Block> MIKU_PLUSH = registerBlock("mikuplush",
+            () -> new PlushBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
+
+    /**
+     * Peluche Kagamine Len - Bloc décoratif Vocaloid.
+     */
+    public static final RegistryObject<Block> KAGAMINE_LEN_PLUSH = registerBlock("kagaminelen",
+            () -> new PlushBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
+
+    /**
+     * Peluche Kagamine Rin - Bloc décoratif Vocaloid.
+     */
+    public static final RegistryObject<Block> KAGAMINE_RIN_PLUSH = registerBlock("kagaminerin",
+            () -> new PlushBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
+
+    /**
+     * Peluche Akita Neru - Bloc décoratif Vocaloid.
+     */
+    public static final RegistryObject<Block> NERU_PLUSH = registerBlock("neruplush",
+            () -> new PlushBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
+
+    /**
+     * Peluche Skibidi Toilet - Bloc décoratif meme.
+     */
+    public static final RegistryObject<Block> SKIBIDI_PLUSH = registerBlock("skibidiplush",
+            () -> new PlushBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
+                    .strength(0.5F)
+                    .sound(SoundType.WOOL)
+                    .noOcclusion()));
+
     /**
      * Enregistre un bloc avec son item associé.
      */

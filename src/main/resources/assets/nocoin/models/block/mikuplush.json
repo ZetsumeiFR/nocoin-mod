@@ -1,0 +1,9 @@
+{
+  "parent": "nocoin:custom/miku_plush_minecraft_5",
+  "textures": {
+    "all": "nocoin:blocks/miku_plush_texture_2",
+    "particle": "nocoin:blocks/miku_plush_texture_2",
+    "2": "nocoin:blocks/miku_plush_texture_2"
+  },
+  "render_type": "cutout"
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "nocoin:block/mikuplush"
+    },
+    "facing=east": {
+      "model": "nocoin:block/mikuplush",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "nocoin:block/mikuplush",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "nocoin:block/mikuplush",
+      "y": 270
+    }
+  }
+}

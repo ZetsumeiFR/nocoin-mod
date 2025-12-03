@@ -1,0 +1,9 @@
+{
+  "parent": "nocoin:custom/kagaminelenminecraftplush",
+  "textures": {
+    "all": "nocoin:blocks/lentexture",
+    "particle": "nocoin:blocks/lentexture",
+    "1": "nocoin:blocks/lentexture"
+  },
+  "render_type": "cutout"
+}

@@ -61,6 +61,11 @@
   "gui.nocoin.leaderboard": "Classement",
 
   "block.nocoin.leaderboard": "Panneau de Classement",
+  "block.nocoin.mikuplush": "Peluche Hatsune Miku",
+  "block.nocoin.kagaminelen": "Peluche Kagamine Len",
+  "block.nocoin.kagaminerin": "Peluche Kagamine Rin",
+  "block.nocoin.neruplush": "Peluche Akita Neru",
+  "block.nocoin.skibidiplush": "Peluche Skibidi Toilet",
   "block.nocoin.leaderboard.tooltip": "Affiche le top 10 des joueurs par NOCOIN",
   "block.nocoin.leaderboard.tooltip2": "Cliquez pour voir le classement complet !",
 
